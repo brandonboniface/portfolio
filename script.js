@@ -1,62 +1,32 @@
+
 /* =========================================
-   NAVBAR SCROLL EFFECT
+   1. MOBILE NAVIGATION
 ========================================= */
 
-const navbar = document.querySelector(".navbar");
+const menuToggle = document.getElementById('menuToggle');
+const navLinks = document.getElementById('navLinks');
 
-window.addEventListener("scroll", () => {
+menuToggle.addEventListener('click', () => {
 
-    if (window.scrollY > 40) {
-        navbar.classList.add("scrolled");
-    } else {
-        navbar.classList.remove("scrolled");
-    }
+    navLinks.classList.toggle('active');
+
+    const icon = menuToggle.querySelector('i');
+
+    icon.classList.toggle('fa-bars');
+    icon.classList.toggle('fa-xmark');
 
 });
 
+document.querySelectorAll('.nav-links a').forEach(link => {
 
-/* =========================================
-   MOBILE MENU
-========================================= */
+    link.addEventListener('click', () => {
 
-const mobileMenu = document.getElementById("mobileMenu");
-const mobileNav = document.getElementById("mobileNav");
+        navLinks.classList.remove('active');
 
-mobileMenu.addEventListener("click", () => {
+        const icon = menuToggle.querySelector('i');
 
-    mobileNav.classList.toggle("open");
-
-    const icon = mobileMenu.querySelector("i");
-
-    if (mobileNav.classList.contains("open")) {
-
-        icon.classList.remove("fa-bars");
-        icon.classList.add("fa-xmark");
-
-    } else {
-
-        icon.classList.remove("fa-xmark");
-        icon.classList.add("fa-bars");
-
-    }
-
-});
-
-
-/* Close mobile menu after clicking */
-
-const mobileLinks = document.querySelectorAll(".mobile-nav a");
-
-mobileLinks.forEach(link => {
-
-    link.addEventListener("click", () => {
-
-        mobileNav.classList.remove("open");
-
-        const icon = mobileMenu.querySelector("i");
-
-        icon.classList.remove("fa-xmark");
-        icon.classList.add("fa-bars");
+        icon.classList.add('fa-bars');
+        icon.classList.remove('fa-xmark');
 
     });
 
@@ -64,228 +34,272 @@ mobileLinks.forEach(link => {
 
 
 /* =========================================
-   ACTIVE NAVIGATION
+   2. SCROLL REVEAL ANIMATIONS
 ========================================= */
 
-const sections = document.querySelectorAll("section[id]");
-const navLinks = document.querySelectorAll(".nav-link");
+const revealObserver = new IntersectionObserver(entries => {
 
-function updateActiveNavigation() {
+    entries.forEach(entry => {
 
-    let currentSection = "";
+        if (entry.isIntersecting) {
 
-    sections.forEach(section => {
+            entry.target.classList.add('visible');
 
-        const sectionTop = section.offsetTop;
+            revealObserver.unobserve(entry.target);
 
-        if (window.scrollY >= sectionTop - 200) {
-            currentSection = section.getAttribute("id");
         }
 
     });
 
-    navLinks.forEach(link => {
+}, {
+    threshold: 0.12
+});
 
-        link.classList.remove("active");
+document.querySelectorAll('.reveal').forEach(element => {
 
-        if (
-            link.getAttribute("href") ===
-            `#${currentSection}`
-        ) {
-            link.classList.add("active");
+    revealObserver.observe(element);
+
+});
+
+
+/* =========================================
+   3. PARTICLE BACKGROUND ANIMATION
+========================================= */
+
+const canvas = document.getElementById('particleCanvas');
+const ctx = canvas.getContext('2d');
+
+let particles = [];
+let animationFrame;
+
+const reducedMotion = window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+).matches;
+
+function resizeCanvas() {
+
+    const rect = canvas.getBoundingClientRect();
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    createParticles();
+
+}
+
+function createParticles() {
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    const particleCount = Math.min(
+        90,
+        Math.floor(width * height / 10000)
+    );
+
+    particles = [];
+
+    for (let i = 0; i < particleCount; i++) {
+
+        particles.push({
+
+            x: Math.random() * width,
+            y: Math.random() * height,
+
+            size: Math.random() * 1.8 + 0.5,
+
+            speedX: (Math.random() - 0.5) * 0.35,
+            speedY: (Math.random() - 0.5) * 0.35,
+
+            opacity: Math.random() * 0.5 + 0.15,
+
+            color: Math.random() > 0.5
+                ? '181, 80, 230'
+                : '39, 136, 245'
+
+        });
+
+    }
+
+}
+
+function drawParticles() {
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    ctx.clearRect(0, 0, width, height);
+
+    particles.forEach((particle, index) => {
+
+        if (!reducedMotion) {
+
+            particle.x += particle.speedX;
+            particle.y += particle.speedY;
+
+            if (particle.x < 0 || particle.x > width) {
+                particle.speedX *= -1;
+            }
+
+            if (particle.y < 0 || particle.y > height) {
+                particle.speedY *= -1;
+            }
+
         }
+
+        // Draw particle
+
+        ctx.beginPath();
+
+        ctx.arc(
+            particle.x,
+            particle.y,
+            particle.size,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            `rgba(${particle.color}, ${particle.opacity})`;
+
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `rgba(${particle.color}, 0.5)`;
+
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+
+        // Connect nearby particles
+
+        for (let j = index + 1; j < particles.length; j++) {
+
+            const other = particles[j];
+
+            const dx = particle.x - other.x;
+            const dy = particle.y - other.y;
+
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 110) {
+
+                ctx.beginPath();
+
+                ctx.moveTo(particle.x, particle.y);
+                ctx.lineTo(other.x, other.y);
+
+                ctx.strokeStyle =
+                    `rgba(140, 90, 200, ${0.12 * (1 - distance / 110)})`;
+
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+
+            }
+
+        }
+
+    });
+
+    if (!reducedMotion) {
+
+        animationFrame = requestAnimationFrame(drawParticles);
+
+    }
+
+}
+
+resizeCanvas();
+drawParticles();
+
+window.addEventListener('resize', () => {
+
+    cancelAnimationFrame(animationFrame);
+
+    resizeCanvas();
+    drawParticles();
+
+});
+
+
+/* =========================================
+   4. INTERACTIVE SECTION NAVIGATION
+========================================= */
+
+const sections = document.querySelectorAll(
+    '#home, #about, #experience, #achievements, #education, #skills, #contact'
+);
+
+const sectionNavItems = document.querySelectorAll(
+    '.section-nav-item'
+);
+
+function setActiveSection(sectionId) {
+
+    sectionNavItems.forEach(item => {
+
+        item.classList.toggle(
+            'active',
+            item.dataset.section === sectionId
+        );
 
     });
 
 }
 
-window.addEventListener(
-    "scroll",
-    updateActiveNavigation
-);
+const sectionObserver = new IntersectionObserver(entries => {
 
+    const visibleSections = entries
+        .filter(entry => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
 
-/* =========================================
-   SCROLL REVEAL
-========================================= */
+    if (visibleSections.length > 0) {
 
-const revealElements =
-    document.querySelectorAll(".reveal");
-
-const observer = new IntersectionObserver(
-    (entries, observer) => {
-
-        entries.forEach(entry => {
-
-            if (entry.isIntersecting) {
-
-                entry.target.classList.add("visible");
-
-                observer.unobserve(entry.target);
-
-            }
-
-        });
-
-    },
-    {
-        threshold: 0.12
-    }
-);
-
-
-revealElements.forEach(element => {
-
-    observer.observe(element);
-
-});
-
-
-/* =========================================
-   BACK TO TOP
-========================================= */
-
-const backToTop =
-    document.getElementById("backToTop");
-
-window.addEventListener("scroll", () => {
-
-    if (window.scrollY > 600) {
-
-        backToTop.classList.add("visible");
-
-    } else {
-
-        backToTop.classList.remove("visible");
+        setActiveSection(visibleSections[0].target.id);
 
     }
 
+}, {
+    rootMargin: '-15% 0px -55% 0px',
+    threshold: [0, 0.1, 0.25, 0.5]
 });
 
+sections.forEach(section => {
 
-backToTop.addEventListener("click", () => {
+    sectionObserver.observe(section);
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
+});
+
+// Click navigation
+
+sectionNavItems.forEach(item => {
+
+    item.addEventListener('click', () => {
+
+        const target = document.getElementById(
+            item.dataset.section
+        );
+
+        if (target) {
+
+            target.scrollIntoView({
+                behavior: reducedMotion ? 'auto' : 'smooth'
+            });
+
+            setActiveSection(item.dataset.section);
+
+        }
+
     });
 
 });
 
 
 /* =========================================
-   FOOTER YEAR
+   5. AUTOMATIC FOOTER YEAR
 ========================================= */
 
-document.getElementById("year").textContent =
+document.getElementById('year').textContent =
     new Date().getFullYear();
-
-
-/* =========================================
-   HERO PARALLAX
-========================================= */
-
-const heroVisual =
-    document.querySelector(".hero-visual");
-
-window.addEventListener("mousemove", event => {
-
-    if (!heroVisual) return;
-
-    const x =
-        (window.innerWidth / 2 - event.clientX) / 80;
-
-    const y =
-        (window.innerHeight / 2 - event.clientY) / 80;
-
-    heroVisual.style.transform =
-        `translate(${x}px, ${y}px)`;
-
-});
-
-
-/* =========================================
-   TILT EFFECT FOR PROJECT CARDS
-========================================= */
-
-const projectCards =
-    document.querySelectorAll(".project-card");
-
-projectCards.forEach(card => {
-
-    card.addEventListener("mousemove", event => {
-
-        const rect =
-            card.getBoundingClientRect();
-
-        const x =
-            event.clientX - rect.left;
-
-        const y =
-            event.clientY - rect.top;
-
-        const centerX =
-            rect.width / 2;
-
-        const centerY =
-            rect.height / 2;
-
-        const rotateX =
-            ((y - centerY) / centerY) * -2;
-
-        const rotateY =
-            ((x - centerX) / centerX) * 2;
-
-        card.style.transform =
-            `perspective(800px)
-             rotateX(${rotateX}deg)
-             rotateY(${rotateY}deg)
-             translateY(-5px)`;
-
-    });
-
-
-    card.addEventListener("mouseleave", () => {
-
-        card.style.transform = "";
-
-    });
-
-});
-
-
-/* =========================================
-   SMOOTH ANCHOR OFFSET
-========================================= */
-
-document.querySelectorAll(
-    'a[href^="#"]'
-).forEach(anchor => {
-
-    anchor.addEventListener("click", function (event) {
-
-        const targetId =
-            this.getAttribute("href");
-
-        const target =
-            document.querySelector(targetId);
-
-        if (!target) return;
-
-        event.preventDefault();
-
-        const offset = 80;
-
-        const targetPosition =
-            target.getBoundingClientRect().top +
-            window.scrollY -
-            offset;
-
-        window.scrollTo({
-            top: targetPosition,
-            behavior: "smooth"
-        });
-
-    });
-
-});
